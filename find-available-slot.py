@@ -13,7 +13,6 @@ parser.add_argument("-c", "--calendars", nargs=1, type=str, required=True, help=
 parser.add_argument("-d", "--duration-in-minutes",  nargs=1, type=int, required=True, help="how many minutes people should be available")
 parser.add_argument("-m", "--minumum-people", "--minimum-people",  nargs=1, type=int, required=True, help="minimum number of people that must be available")
 args = parser.parse_args()
-print(args)
 
 if args.minumum_people[0]:
     min_people = args.minumum_people[0]
@@ -21,7 +20,6 @@ else:
     min_people = args.minimum_people[0]
 
 currdatetime = datetime(2022,7,1,9,0,0)
-print("It's:", currdatetime)
 
 path = os.getcwd() + args.calendars[0]
 path = os.path.normpath(path)
@@ -85,32 +83,23 @@ def generate_datetimes(date_from, date_to, person):
 
 for person in people:
     min_before = 0
-    print(person.name)
     min_before = currdatetime
     #this loop checks every start date of a person
     for i, dateStart in enumerate(person.dateS): 
         max_before = dateStart - timedelta(minutes = args.duration_in_minutes[0]) #maximum available date considering date in that loop and task duration
         if i == 0:
             if max_before>min_before: #if first date is later than current date, then generate availability datetimes
-                print("Available - from:",min_before,"to:",max_before)
                 generate_datetimes(min_before,max_before,person)
-            else:
-                print("Unavailable - last start date: %s is before current date: %s" % (max_before, currdatetime))
         else:
             if max_before>person.dateE[i-1]: #if current maximum available date is later than last busy ending date then generate datetimes and overwrite minimum (start) date
                 min_before = person.dateE[i-1] + timedelta(seconds=1)
-                print("Available - from:",min_before,"to:",max_before)
                 generate_datetimes(min_before,max_before,person)
-            else:
-                print("Unavailable - last start date: %s overlaps last busy period: %s" % (max_before, person.dateE[i-1]))
 
     min_after = person.dateE[len(person.dateE)-1] + timedelta(seconds=1)
-    print("Available - from: %s onwards" %(min_after))
     generate_datetimes(min_after,nearest_max,person)
 
 #Calculate all possible combinations
 combinations_ = factorial(len(people))/(factorial(min_people)*factorial((len(people)-min_people)))
-print("Combinations:",combinations_)
 
 #Make a list of indexes (cause number of people may vary)
 list_indexes = []
@@ -122,18 +111,16 @@ computed_dates = []
 
 #Get the combinations as list
 combinations_2 = list(combinations(list_indexes, min_people))
-print(combinations_2)
 #Iterate through list
 for comb in combinations_2:
     comp = []   #for every combination create a list to store the lists in that combination
     for item in comb:   #iterate through indexes of person combinations
         comp.append(set(people[item].availability))
     output = reduce((lambda x,y: x & y), map(set, comp))    #find same occurences (shared availability dates)
-    print("Output from combination:",comb,"equals min date of:",min(output))
     computed_dates.append(min(output)) #append the nearest date from available dates
 
 nearest_date = min(computed_dates)
-print("Nearest slot for that task:",nearest_date)
+print(nearest_date)
         
 
     
